@@ -12,7 +12,6 @@ mongoose
     socketTimeoutMS: 45000, // Close inactive sockets sooner
     connectTimeoutMS: 10000, // Time to establish connection
     family: 4, // Use IPv4 for faster DNS resolution
-    autoIndex: true, // Build indexes automatically (disable in production for large DBs)
   })
   .then(async () => {
     serverInstance.listen(PORT);
