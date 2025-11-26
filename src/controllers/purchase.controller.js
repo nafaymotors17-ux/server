@@ -6,123 +6,81 @@ const asyncHandler = require("../utils/asyncHandler");
 
 // Create new purchase
 exports.createPurchase = asyncHandler(async (req, res, next) => {
-  const {
-    purchaseDate,
-    auctionNumber,
-    maker,
-    chassisNumber,
-    push,
-    tax,
-    auctionFee,
-    recycle = 0,
-    risko = 0,
-    auction,
-    yard = "",
-    loadDate, // ✅ NEW: Load Date
-    ETA, // ✅ ETA field
-    modelYear,
-    status,
-  } = req.body;
+  const body = req.body;
 
-  // Required fields validation
-  if (
-    !purchaseDate ||
-    !auctionNumber ||
-    !maker ||
-    !chassisNumber ||
-    push === undefined ||
-    tax === undefined ||
-    auctionFee === undefined ||
-    !auction
-  ) {
-    throw ApiError.badRequest("All required fields must be provided");
+  const safeTrim = (v) => (typeof v === "string" ? v.trim() : v);
+  const safeUpperTrim = (v) =>
+    typeof v === "string" ? v.trim().toUpperCase() : v;
+  const safeNumber = (v) =>
+    v === undefined || v === "" || v === null ? undefined : Number(v);
+
+  // Required field validation (schema will validate too)
+  const required = [
+    "purchaseDate",
+    "auctionNumber",
+    "maker",
+    "chassisNumber",
+    "push",
+    "tax",
+    "auctionFee",
+    "auction",
+  ];
+  for (const field of required) {
+    if (
+      body[field] === undefined ||
+      body[field] === null ||
+      body[field] === ""
+    ) {
+      throw ApiError.badRequest(`${field} is required`);
+    }
   }
 
-  // Check duplicate chassis
-  const existingChassis = await Purchase.findOne({
-    chassisNumber: chassisNumber.toUpperCase().trim(),
-  });
-  if (existingChassis) {
+  // Duplicate checks
+  const chassis = safeUpperTrim(body.chassisNumber);
+  if (await Purchase.findOne({ chassisNumber: chassis })) {
     throw ApiError.conflict(
       "A vehicle with this chassis number already exists"
     );
   }
 
-  // Check duplicate auction number
-  const existingAuction = await Purchase.findOne({ auctionNumber });
-  if (existingAuction) {
-    throw ApiError.conflict(
-      "A purchase with this auction number already exists"
-    );
+  if (await Purchase.findOne({ auctionNumber: Number(body.auctionNumber) })) {
+    throw ApiError.conflict("Auction number already exists");
   }
 
-  // Numeric validations
-  if (isNaN(auctionNumber) || auctionNumber <= 0)
-    throw ApiError.badRequest("Auction number must be positive");
-
-  if (isNaN(push) || push < 0)
-    throw ApiError.badRequest("Push cost must be non-negative");
-
-  if (isNaN(tax) || tax < 0)
-    throw ApiError.badRequest("Tax must be non-negative");
-
-  if (isNaN(auctionFee) || auctionFee < 0)
-    throw ApiError.badRequest("Auction fee must be non-negative");
-
-  if (isNaN(recycle) || recycle < 0)
-    throw ApiError.badRequest("Recycle cost must be non-negative");
-
-  if (isNaN(risko) || risko < 0)
-    throw ApiError.badRequest("Risk cost must be non-negative");
-
-  // Date validations
-  if (loadDate && isNaN(new Date(loadDate).getTime()))
-    throw ApiError.badRequest("Invalid load date");
-
-  if (ETA && isNaN(new Date(ETA).getTime()))
-    throw ApiError.badRequest("Invalid ETA date");
-
-  // Model year format validation
-  if (modelYear && !/^\d{4}-\d{2}$/.test(modelYear)) {
-    throw ApiError.badRequest("Model year must be in YYYY-MM format");
-  }
-
-  // Create purchase object - total & expiry are handled in model
+  // Build purchase object safely
   const purchaseData = {
-    purchaseDate: new Date(purchaseDate),
-    auctionNumber: parseInt(auctionNumber),
-    maker: maker.trim(),
-    chassisNumber: chassisNumber.toUpperCase().trim(),
-    push: parseFloat(push),
-    tax: parseFloat(tax),
-    auctionFee: parseFloat(auctionFee),
-    recycle: parseFloat(recycle),
-    risko: parseFloat(risko),
-    auction: auction.trim(),
-    yard: yard.trim(),
-    status: status ?? "purchased",
+    purchaseDate: new Date(body.purchaseDate),
+    auctionNumber: Number(body.auctionNumber),
+    maker: safeTrim(body.maker),
+    chassisNumber: chassis,
+    push: Number(body.push),
+    tax: Number(body.tax),
+    auctionFee: Number(body.auctionFee),
+    auction: safeTrim(body.auction),
   };
 
-  // ✅ Add loadDate and ETA if provided
-  if (loadDate) purchaseData.loadDate = new Date(loadDate);
-  if (ETA) purchaseData.ETA = new Date(ETA);
-  if (modelYear) purchaseData.modelYear = modelYear.trim();
+  // Optional fields
+  if (body.recycle !== undefined)
+    purchaseData.recycle = safeNumber(body.recycle);
+  if (body.risko !== undefined) purchaseData.risko = safeNumber(body.risko);
+  if (body.yard !== undefined) purchaseData.yard = safeTrim(body.yard);
+  if (body.loadDate) purchaseData.loadDate = new Date(body.loadDate);
+  if (body.ETA) purchaseData.ETA = new Date(body.ETA);
+  if (body.modelYear) purchaseData.modelYear = safeTrim(body.modelYear);
+  if (body.status) purchaseData.status = body.status;
 
-  // ✅ Add user tracking if available
+  // User tracking
   if (req.user) {
     purchaseData.createdBy = req.user.id;
     purchaseData.createdByName = req.user.name || req.user.username;
   }
 
   const purchase = new Purchase(purchaseData);
-  await purchase.save();
+  await purchase.save(); // triggers pre-save → calculates total + expiry
 
-  const response = ApiResponse.created(
-    "Purchase created successfully",
-    purchase
-  );
-
-  res.status(201).json(response);
+  res
+    .status(201)
+    .json(ApiResponse.created("Purchase created successfully", purchase));
 });
 
 // src/controllers/purchaseController.js
