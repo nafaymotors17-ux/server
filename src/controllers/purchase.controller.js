@@ -3,7 +3,7 @@ const Purchase = require("../models/purchase.model");
 const ApiError = require("../utils/api.error");
 const ApiResponse = require("../utils/api.response");
 const asyncHandler = require("../utils/asyncHandler");
-
+const activityLogger = require("../utils/activity.logger");
 // Create new purchase
 exports.createPurchase = asyncHandler(async (req, res, next) => {
   const body = req.body;
@@ -77,6 +77,17 @@ exports.createPurchase = asyncHandler(async (req, res, next) => {
 
   const purchase = new Purchase(purchaseData);
   await purchase.save(); // triggers pre-save → calculates total + expiry
+  // Log the activity
+  if (req.user) {
+    activityLogger.logActivity(req.user, "CREATE_PURCHASE", "PURCHASE", {
+      purchaseId: purchase._id,
+      chassisNumber: purchase.chassisNumber,
+      auctionNumber: purchase.auctionNumber,
+      maker: purchase.maker,
+      modelYear: purchase.modelYear,
+      totalCost: purchase.total,
+    });
+  }
 
   res
     .status(201)
@@ -373,6 +384,30 @@ exports.updatePurchase = asyncHandler(async (req, res, next) => {
       "✅ Purchase updated successfully:",
       updatedPurchase.chassisNumber
     );
+    if (req.user) {
+      activityLogger.logActivity(req.user, "UPDATE_PURCHASE", "PURCHASE", {
+        purchaseId: updatedPurchase._id,
+        chassisNumber: updatedPurchase.chassisNumber,
+        auctionNumber: updatedPurchase.auctionNumber,
+        maker: updatedPurchase.maker,
+        modelYear: updatedPurchase.modelYear,
+        changedFields: Object.keys(updateData),
+        oldValues: {
+          chassisNumber: purchase.chassisNumber, // ✅ Now available
+          auctionNumber: purchase.auctionNumber,
+          maker: purchase?.maker,
+          modelYear: purchase?.modelYear,
+          status: purchase?.status,
+        },
+        newValues: {
+          chassisNumber: updatedPurchase.chassisNumber,
+          auctionNumber: updatedPurchase.auctionNumber,
+          maker: updatedPurchase.maker,
+          modelYear: updatedPurchase.modelYear,
+          status: updatedPurchase.status,
+        },
+      });
+    }
 
     res
       .status(200)
@@ -396,7 +431,16 @@ exports.deletePurchase = asyncHandler(async (req, res, next) => {
   }
 
   const response = ApiResponse.success("Record deleted successfully");
-
+  // Log the activity
+  if (req.user) {
+    activityLogger.logActivity(req.user, "DELETE_PURCHASE", "PURCHASE", {
+      purchaseId: purchase._id,
+      chassisNumber: purchase.chassisNumber,
+      auctionNumber: purchase.auctionNumber,
+      maker: purchase.maker,
+      modelYear: purchase.modelYear,
+    });
+  }
   res.status(200).json(response);
 });
 
@@ -427,11 +471,6 @@ exports.updatePurchaseStatus = asyncHandler(async (req, res, next) => {
     id,
     {
       status,
-      // ✅ Add user tracking if available
-      ...(req.user && {
-        updatedBy: req.user.id,
-        updatedByName: req.user.name || req.user.username,
-      }),
     },
     {
       new: true,
@@ -447,6 +486,17 @@ exports.updatePurchaseStatus = asyncHandler(async (req, res, next) => {
     `Status updated to ${status} successfully`,
     purchase
   );
+  // Log the activity
+  if (req.user) {
+    activityLogger.logActivity(req.user, "STATUS_CHANGE", "PURCHASE", {
+      purchaseId: purchase._id,
+      chassisNumber: purchase.chassisNumber,
+      auctionNumber: purchase.auctionNumber,
+      maker: purchase.maker,
+      oldStatus: status, // ✅ Use actual old status
+      newStatus: status,
+    });
+  }
 
   res.status(200).json(response);
 });
@@ -460,11 +510,6 @@ exports.revertToPurchased = asyncHandler(async (req, res, next) => {
     id,
     {
       status: "purchased",
-      // ✅ Add user tracking if available
-      ...(req.user && {
-        updatedBy: req.user.id,
-        updatedByName: req.user.name || req.user.username,
-      }),
     },
     {
       new: true,
