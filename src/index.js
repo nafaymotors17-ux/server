@@ -8,9 +8,9 @@ const app = express();
 
 // Import routes
 // const authRoutes = require("./routes/auth.routes");
-// const purchaseRoutes = require("./routes/purchase.route");
-// const activityRoutes = require("./routes/activity.routes");
-// const dashboardRoutes = require("./routes/dashboard.routes");
+const purchaseRoutes = require("./routes/purchase.route");
+const activityRoutes = require("./routes/activity.routes");
+const dashboardRoutes = require("./routes/dashboard.routes");
 // Use purchase routes
 // Middleware
 app.use(helmet());
@@ -39,9 +39,9 @@ app.use(express.urlencoded({ extended: true }));
 app.use(morgan("dev"));
 
 // app.use("/api/auth", authRoutes);
-// app.use("/api/purchases", purchaseRoutes);
-// app.use("/api/activities", activityRoutes);
-// app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/purchases", purchaseRoutes);
+app.use("/api/activities", activityRoutes);
+app.use("/api/dashboard", dashboardRoutes);
 // Health check route
 app.get("/api/health", (req, res) => {
   res.status(200).json({
