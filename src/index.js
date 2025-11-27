@@ -7,10 +7,10 @@ const cookieParser = require("cookie-parser");
 const app = express();
 
 // Import routes
-// const authRoutes = require("./routes/auth.routes");
+const authRoutes = require("./routes/auth.routes");
 const purchaseRoutes = require("./routes/purchase.route");
 // const activityRoutes = require("./routes/activity.routes");
-// const dashboardRoutes = require("./routes/dashboard.routes");
+const dashboardRoutes = require("./routes/dashboard.routes");
 // Use purchase routes
 // Middleware
 app.use(helmet());
