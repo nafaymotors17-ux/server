@@ -38,10 +38,10 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use(morgan("dev"));
 
-// app.use("/api/auth", authRoutes);
+app.use("/api/auth", authRoutes);
 app.use("/api/purchases", purchaseRoutes);
-app.use("/api/activities", activityRoutes);
-// app.use("/api/dashboard", dashboardRoutes);
+// app.use("/api/activities", activityRoutes);
+app.use("/api/dashboard", dashboardRoutes);
 // Health check route
 app.get("/api/health", (req, res) => {
   res.status(200).json({
