@@ -3,7 +3,7 @@ const Purchase = require("../models/purchase.model");
 const ApiError = require("../utils/api.error");
 const ApiResponse = require("../utils/api.response");
 const asyncHandler = require("../utils/asyncHandler");
-const activityLogger = require("../utils/activity.logger");
+// const activityLogger = require("../utils/activity.logger");
 // Create new purchase
 exports.createPurchase = asyncHandler(async (req, res, next) => {
   const body = req.body;
@@ -70,24 +70,24 @@ exports.createPurchase = asyncHandler(async (req, res, next) => {
   if (body.status) purchaseData.status = body.status;
 
   // User tracking
-  if (req.user) {
-    purchaseData.createdBy = req.user.id;
-    purchaseData.createdByName = req.user.name || req.user.username;
-  }
+  // if (req.user) {
+  //   purchaseData.createdBy = req.user.id;
+  //   purchaseData.createdByName = req.user.name || req.user.username;
+  // }
 
   const purchase = new Purchase(purchaseData);
   await purchase.save(); // triggers pre-save → calculates total + expiry
   // Log the activity
-  if (req.user) {
-    activityLogger.logActivity(req.user, "CREATE_PURCHASE", "PURCHASE", {
-      purchaseId: purchase._id,
-      chassisNumber: purchase.chassisNumber,
-      auctionNumber: purchase.auctionNumber,
-      maker: purchase.maker,
-      modelYear: purchase.modelYear,
-      totalCost: purchase.total,
-    });
-  }
+  // if (req.user) {
+  //   activityLogger.logActivity(req.user, "CREATE_PURCHASE", "PURCHASE", {
+  //     purchaseId: purchase._id,
+  //     chassisNumber: purchase.chassisNumber,
+  //     auctionNumber: purchase.auctionNumber,
+  //     maker: purchase.maker,
+  //     modelYear: purchase.modelYear,
+  //     totalCost: purchase.total,
+  //   });
+  // }
 
   res
     .status(201)
@@ -384,30 +384,30 @@ exports.updatePurchase = asyncHandler(async (req, res, next) => {
       "✅ Purchase updated successfully:",
       updatedPurchase.chassisNumber
     );
-    if (req.user) {
-      activityLogger.logActivity(req.user, "UPDATE_PURCHASE", "PURCHASE", {
-        purchaseId: updatedPurchase._id,
-        chassisNumber: updatedPurchase.chassisNumber,
-        auctionNumber: updatedPurchase.auctionNumber,
-        maker: updatedPurchase.maker,
-        modelYear: updatedPurchase.modelYear,
-        changedFields: Object.keys(updateData),
-        oldValues: {
-          chassisNumber: purchase.chassisNumber, // ✅ Now available
-          auctionNumber: purchase.auctionNumber,
-          maker: purchase?.maker,
-          modelYear: purchase?.modelYear,
-          status: purchase?.status,
-        },
-        newValues: {
-          chassisNumber: updatedPurchase.chassisNumber,
-          auctionNumber: updatedPurchase.auctionNumber,
-          maker: updatedPurchase.maker,
-          modelYear: updatedPurchase.modelYear,
-          status: updatedPurchase.status,
-        },
-      });
-    }
+    // if (req.user) {
+    //   activityLogger.logActivity(req.user, "UPDATE_PURCHASE", "PURCHASE", {
+    //     purchaseId: updatedPurchase._id,
+    //     chassisNumber: updatedPurchase.chassisNumber,
+    //     auctionNumber: updatedPurchase.auctionNumber,
+    //     maker: updatedPurchase.maker,
+    //     modelYear: updatedPurchase.modelYear,
+    //     changedFields: Object.keys(updateData),
+    //     oldValues: {
+    //       chassisNumber: purchase.chassisNumber, // ✅ Now available
+    //       auctionNumber: purchase.auctionNumber,
+    //       maker: purchase?.maker,
+    //       modelYear: purchase?.modelYear,
+    //       status: purchase?.status,
+    //     },
+    //     newValues: {
+    //       chassisNumber: updatedPurchase.chassisNumber,
+    //       auctionNumber: updatedPurchase.auctionNumber,
+    //       maker: updatedPurchase.maker,
+    //       modelYear: updatedPurchase.modelYear,
+    //       status: updatedPurchase.status,
+    //     },
+    //   });
+    // }
 
     res
       .status(200)
@@ -432,15 +432,15 @@ exports.deletePurchase = asyncHandler(async (req, res, next) => {
 
   const response = ApiResponse.success("Record deleted successfully");
   // Log the activity
-  if (req.user) {
-    activityLogger.logActivity(req.user, "DELETE_PURCHASE", "PURCHASE", {
-      purchaseId: purchase._id,
-      chassisNumber: purchase.chassisNumber,
-      auctionNumber: purchase.auctionNumber,
-      maker: purchase.maker,
-      modelYear: purchase.modelYear,
-    });
-  }
+  // if (req.user) {
+  //   activityLogger.logActivity(req.user, "DELETE_PURCHASE", "PURCHASE", {
+  //     purchaseId: purchase._id,
+  //     chassisNumber: purchase.chassisNumber,
+  //     auctionNumber: purchase.auctionNumber,
+  //     maker: purchase.maker,
+  //     modelYear: purchase.modelYear,
+  //   });
+  // }
   res.status(200).json(response);
 });
 
@@ -487,16 +487,16 @@ exports.updatePurchaseStatus = asyncHandler(async (req, res, next) => {
     purchase
   );
   // Log the activity
-  if (req.user) {
-    activityLogger.logActivity(req.user, "STATUS_CHANGE", "PURCHASE", {
-      purchaseId: purchase._id,
-      chassisNumber: purchase.chassisNumber,
-      auctionNumber: purchase.auctionNumber,
-      maker: purchase.maker,
-      oldStatus: status, // ✅ Use actual old status
-      newStatus: status,
-    });
-  }
+  // if (req.user) {
+  //   activityLogger.logActivity(req.user, "STATUS_CHANGE", "PURCHASE", {
+  //     purchaseId: purchase._id,
+  //     chassisNumber: purchase.chassisNumber,
+  //     auctionNumber: purchase.auctionNumber,
+  //     maker: purchase.maker,
+  //     oldStatus: status, // ✅ Use actual old status
+  //     newStatus: status,
+  //   });
+  // }
 
   res.status(200).json(response);
 });
